@@ -1,0 +1,53 @@
+/* Application-wide Styles */
+h1 {
+    color: #369;
+    font-family: 'Archivo', Arial, Helvetica, sans-serif;
+    font-size: 250%;
+    background-color: whitesmoke;
+    padding: 20px;
+}
+h2, h3 {
+  color: #444;
+  font-family: 'Lato', Arial, Helvetica, sans-serif;
+  font-weight: lighter;
+}
+  
+app-root {
+  height: 1000px;
+}
+body, input[type="text"], button {
+  color: #888;
+  font-family: 'Lato', Cambria, Georgia;
+}
+/* everywhere else */
+* {
+  font-family: 'Lato', Arial, Helvetica, sans-serif;
+}
+
+.main {
+  margin: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;   
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+@media screen and (max-width: 800px) {
+  .column {
+    width: 100%;
+  }
+}
