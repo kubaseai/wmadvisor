@@ -7,6 +7,8 @@ import * as am4charts from "@amcharts/amcharts4/charts";
 import am4themes_animated from "@amcharts/amcharts4/themes/animated";
 import { Renderer, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/platform-browser';
+import 'hammerjs';
+import {MatButtonModule} from '@angular/material/button';
 
 am4core.useTheme(am4themes_animated);
 
@@ -19,7 +21,11 @@ am4core.useTheme(am4themes_animated);
 export class AppComponent {
   private chartPortfolioReal: am4charts.PieChart3D;
   private chartPortfolioModel: am4charts.PieChart3D;
-
+  private selectedRealPortfolioGrouping : string = 'product';
+  private selectedModelPortfolioGrouping : string = 'product';
+  private mapReal = new Map<string, number>();
+  private mapModel = new Map<string, number>();
+  
   constructor(private zone: NgZone, @Inject(DOCUMENT) private document: any, private renderer: Renderer) {
     this.customerPortfolio = CustomerDataService.getCustomerPortfolio(this.customerId);
   }
@@ -94,7 +100,8 @@ export class AppComponent {
     this.zone.runOutsideAngular(() => {
       this.enableRwd();
       this.addGoogleFont('Archivo');    
-      this.addGoogleFont('Lato');      
+      this.addGoogleFont('Lato');  
+      this.addGoogleFont('Material Icons');    
       this.makeChartPortfolioReal();
       this.makeChartPortfolioModel();
     });
@@ -111,7 +118,36 @@ export class AppComponent {
   customerId = "1";  
   customerPortfolio? : CustomerPortfolioComponent;
 
-  onSelect(product: ProductComponent): void {
-    console.log("selected product "+product.id);
+  makeGroupingKey(product: ProductComponent, by: string) : string {
+    if (by=='industry')
+      return product.advisoryClassificationGroupName;
+    else if (by=='currency')
+      return product.originalCurrency;
+    return product.name;
+  }
+
+  onSelected(kind: string, by: string): void {
+    console.log("grouping requested for "+kind+" by "+by);
+    let map : Map<string, number> = 
+      (kind=='model' ? this.mapModel : this.mapReal);
+    map.clear();
+
+    if (by=='product')
+      return;
+    
+    for (let i : number = 1; i < this.customerPortfolio.productsAllocation.length; i++) {
+      let product : ProductComponent = this.customerPortfolio.productsAllocation[i][0];
+      let key : string = this.makeGroupingKey(product, by);
+      let num : number = map[key];
+      if (num==null)
+        num = 0;
+      num += this.customerPortfolio.productsAllocation[i][1];
+      map[key] = num;
+    }
+
+    if (kind=='model')
+      this.makeChartPortfolioModel();
+    else if (kind=='real')
+      this.makeChartPortfolioReal();
   }
 }

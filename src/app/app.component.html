@@ -1,4 +1,5 @@
 <!--The content below is only a placeholder and can be replaced.-->
+
 <div class="main">
   <div><h1>{{title}}</h1></div>
   <label>Customer Id
@@ -9,25 +10,23 @@
   <div class="row">
     <div class="column">
       <h2>Customer real portfolio</h2>
+      <div class="grouping-buttons">
+        <button mat-raised-button color="primary" (click)="onSelected('real','product');">By products</button>
+        <button mat-raised-button color="primary" (click)="onSelected('real','industry');">By industry</button>
+        <button mat-raised-button color="primary" (click)="onSelected('real','currency');">By currency</button>
+      </div>
       <div id="chartPortfolioReal" style="width: 500px;"></div>
     </div>
     <div class="column">
       <h2>Customer recommended model portfolio</h2>
+      <div class="grouping-buttons">
+        <button mat-raised-button color="primary" (click)="onSelected('model','product');">By products</button>
+        <button mat-raised-button color="primary" (click)="onSelected('model','industry');">By industry</button>
+        <button mat-raised-button color="primary" (click)="onSelected('model','currency');">By currency</button>
+      </div>
       <div id="chartPortfolioModel" style="width: 500px;"></div>
-    </div>
-
-  <!--<ul>
-    <li *ngFor="let productAndPercent of customerPortfolio.productsAllocation" (click)="onSelect(productAndPercent[0])">
-      {{productAndPercent[0].name}} ({{productAndPercent[0].id}}): {{productAndPercent[1]}}%
-    </li>    
-  </ul>
-
-  <ul>
-    <li *ngFor="let productAndPercent of customerPortfolio.customerModelPortfolio.productsAllocation" (click)="onSelect(productAndPercent[0])">
-      {{productAndPercent[0].name}} ({{productAndPercent[0].id}}): {{productAndPercent[1]}}%
-    </li>
-  </ul>-->
-</div>
+    </div>  
+  </div>
 </div>
 
 <router-outlet></router-outlet>

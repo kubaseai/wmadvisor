@@ -1,25 +1,16 @@
 /* Application-wide Styles */
-h1 {
-    color: #369;
-    font-family: 'Archivo', Arial, Helvetica, sans-serif;
-    font-size: 250%;
-    background-color: whitesmoke;
-    padding: 20px;
+body {
+  padding: 10px;
 }
-h2, h3 {
+body, h1, h2, h3 {
   color: #444;
   font-family: 'Lato', Arial, Helvetica, sans-serif;
-  font-weight: lighter;
+  font-weight: lighter;  
+}  
+h1 {
+  color: #3f51b5;
+  font-weight: bolder;
 }
-  
-app-root {
-  height: 1000px;
-}
-body, input[type="text"], button {
-  color: #888;
-  font-family: 'Lato', Cambria, Georgia;
-}
-/* everywhere else */
 * {
   font-family: 'Lato', Arial, Helvetica, sans-serif;
 }
@@ -37,17 +28,21 @@ body, input[type="text"], button {
   width: 50%;
   padding: 10px;   
 }
-
 /* Clear floats after the columns */
 .row:after {
   content: "";
   display: table;
   clear: both;
 }
-
 /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
 @media screen and (max-width: 800px) {
   .column {
     width: 100%;
   }
 }
+
+.grouping-buttons button {
+  margin-right: 8px;
+}
+
+
