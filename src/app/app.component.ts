@@ -8,6 +8,7 @@ import am4themes_animated from "@amcharts/amcharts4/themes/animated";
 import { Renderer, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/platform-browser';
 import 'hammerjs';
+import { CdkAccordion } from '@angular/cdk/accordion';
 
 am4core.useTheme(am4themes_animated);
 
@@ -25,8 +26,8 @@ export class AppComponent {
   private selectedModelPortfolioGrouping : string = 'product';
   private mapReal = new Map<string, number>();
   private mapModel = new Map<string, number>();
-  private static selectedRealProduct : string;
-  private static selectedModelProduct: string;
+  private static selectedRealProduct = new Set();
+  private static selectedModelProduct = new Set();
   
   constructor(private zone: NgZone, @Inject(DOCUMENT) private document: any, private renderer: Renderer) {
     this.customerPortfolio = CustomerDataService.getCustomerPortfolio(this.customerId);
@@ -63,8 +64,12 @@ export class AppComponent {
     series.ticks.template.disabled = true;
     series.labels.template.disabled = true;
     series.slices.template.events.on("hit", function(event) {
-      AppComponent.selectedRealProduct = data[event.target.dataItem.index].symbol;
-      console.log("Selected real product "+AppComponent.selectedRealProduct);
+      let symbol = data[event.target.dataItem.index].symbol;
+      if (AppComponent.selectedRealProduct.has(symbol))
+        AppComponent.selectedRealProduct.delete(symbol);
+      else
+        AppComponent.selectedRealProduct.add(symbol);
+      console.log(AppComponent.selectedRealProduct);
     });
     chartPortfolioReal.svgContainer.htmlElement.style.height = 
       (data.length*45 + chartPortfolioReal.radius*2) + "px";
@@ -124,8 +129,12 @@ export class AppComponent {
     series.ticks.template.disabled = true;
     series.labels.template.disabled = true;
     series.slices.template.events.on("hit", function(event) {
-      AppComponent.selectedModelProduct = data[event.target.dataItem.index].symbol;
-      console.log("Selected model product "+AppComponent.selectedModelProduct);
+      let symbol = data[event.target.dataItem.index].symbol;
+      if (AppComponent.selectedModelProduct.has(symbol))
+        AppComponent.selectedModelProduct.delete(symbol);
+      else
+        AppComponent.selectedModelProduct.add(symbol);
+      console.log(AppComponent.selectedModelProduct);
     });
     chartPortfolioModel.svgContainer.htmlElement.style.height = 
       (data.length*45 + chartPortfolioModel.radius*2) + "px";
@@ -212,30 +221,44 @@ export class AppComponent {
     if (this.valueChart)
       this.valueChart.dispose();
 
-    CustomerDataService.getStockData(AppComponent.selectedRealProduct, 365).subscribe((jsonData: any) => {
-      let chart = am4core.create("valueChart", am4charts.XYChart);
-      console.log('aaaa');
-      console.log(jsonData);
-      var data = [];
-      data.push({date:Date.now(), value: 1});
-      chart.data = data;
+    let stockSymbols = kind=='real' ? AppComponent.selectedRealProduct :
+      AppComponent.selectedModelProduct;
+    let it : Iterator<string> = stockSymbols.keys();
+    let stockSymbol : string;
+    while (true) {
+      let result = it.next();
+      if (result.done) {        
+        break;
+      }
+      stockSymbol = result.value;
+    }
+
+    console.log("retrieve stock data "+stockSymbol);
+
+    CustomerDataService.getStockData(stockSymbol, 365).subscribe((stockData: any) => {
+      let chart = am4core.create("valueChart", am4charts.XYChart);      
+      chart.data = stockData;
       chart.svgContainer.htmlElement.style.height = "500px";
+
       // Create axes
       let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
       let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-      dateAxis.renderer.minGridDistance = 60;   
+      dateAxis.renderer.minGridDistance = 60;
+      valueAxis.extraMin = 1;
 
       // Create series
       let series = chart.series.push(new am4charts.LineSeries());
       series.dataFields.valueY = "value";
       series.dataFields.dateX = "date";
-      series.tooltipText = kind;
+      series.tooltipText = (kind=='real' ? 'current':'recommended')+
+       " product "+stockSymbol + ": {value}";
       series.tooltip.pointerOrientation = "vertical";
 
       chart.cursor = new am4charts.XYCursor();
       chart.cursor.snapToSeries = series;
       chart.scrollbarX = new am4core.Scrollbar();
-
+      chart.scrollbarY = new am4core.Scrollbar();
+      
       this.valueChart = chart;
       document.getElementById('valueChart').scrollIntoView();
     });

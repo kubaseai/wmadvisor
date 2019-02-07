@@ -5,13 +5,15 @@ import { ProductComponent } from '../app/product/product.component';
 import { PortfolioComponent } from './portfolio/portfolio.component';
 import { HttpClientModule, HttpClient, HttpHandler, HttpXhrBackend, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Injector} from '@angular/core';
-import { Observable, pipe } from 'rxjs';
-import { map, filter, skip } from 'rxjs/operators';
+import { Observable, pipe, from } from 'rxjs';
+import { map, flatMap, filter, skip } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CustomerDataService {
+
+  private static API_KEY : string = 'N4MJ59ALJQQV88T4';
 
   private static injector = Injector.create({
     providers: [
@@ -90,18 +92,22 @@ export class CustomerDataService {
     return portfolio;
   }
 
+  public static dailyStocksTransform(arr: any) : any {
+    let symbols : Array<string> = Object.getOwnPropertyNames(arr);
+    let data = [];
+    for (let name of symbols) {
+      let val = Object.getOwnPropertyDescriptor(arr, name).value;
+      let price = val["4. close"];
+      data.push({ date: name, value: price});
+    }
+    return data;
+  }
+
   public static getStockData(symbol: string, points: number) : Observable<any> {
-    let payload = this.http.get<any>('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='
-      +symbol+'&outputSize='+points+'&apikey=N4MJ59ALJQQV88T4').pipe(
-        map(root => root["Time Series (Daily)"]));
-    payload.pipe(
-      map(elem => {
-          date: elem.localname;
-          value: elem["1. open"]
-      })
-    ).subscribe(elem => {
-      console.log(elem);
-    });
+    let payload = this.http.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='
+      +symbol+'&outputSize='+points+'&apikey='+CustomerDataService.API_KEY).pipe(
+        map(root => CustomerDataService.dailyStocksTransform(root["Time Series (Daily)"]))
+    );
     return payload;
   }
 }
