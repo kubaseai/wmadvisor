@@ -1,31 +1,53 @@
 <!--The content below is only a placeholder and can be replaced.-->
 
-<div class="main">
-  <div><h1>{{title}}</h1></div>
-  <label>Customer Id
-    <input [(ngModel)]="customerId" placeholder="customerId"/>
-  </label>
+<mat-card [style.backgroundColor]="'#EAEDED'">
+  <mat-card-header>
+    <div mat-card-avatar class="header-image"></div>
+    <mat-card-title>{{title}}</mat-card-title>
+    <mat-card-subtitle>Presentation of real customer portfolio and recommended model</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <p>
+      <label>Customer Id: <input [(ngModel)]="customerId" placeholder="customerId"/></label>
+    </p>
+    <p>Customer risk profile: {{customerPortfolio.customerRiskProfile}}</p>    
+  </mat-card-content>
+  <mat-card-actions>
+    <button mat-button onClick="window.print();">Print</button>    
+  </mat-card-actions>
+</mat-card>
 
-  <p>Customer risk profile: {{customerPortfolio.customerRiskProfile}}</p>
+<div class="main">  
   <div class="row">
     <div class="column">
-      <h2>Customer real portfolio</h2>
+      <h2>Current portfolio</h2>
       <div class="grouping-buttons">
         <button mat-raised-button color="primary" (click)="onSelected('real','product');">By products</button>
         <button mat-raised-button color="primary" (click)="onSelected('real','industry');">By industry</button>
         <button mat-raised-button color="primary" (click)="onSelected('real','currency');">By currency</button>
+        <div style="clear: both">
+          <button mat-raised-button (click)="onHistory('real');">History</button>
+          <button mat-raised-button color="accent" (click)="onPrediction('real');">Prediction</button>
+        </div>
       </div>
       <div id="chartPortfolioReal" style="width: 500px;"></div>
     </div>
     <div class="column">
-      <h2>Customer recommended model portfolio</h2>
+      <h2>Recommended portfolio</h2>
       <div class="grouping-buttons">
         <button mat-raised-button color="primary" (click)="onSelected('model','product');">By products</button>
         <button mat-raised-button color="primary" (click)="onSelected('model','industry');">By industry</button>
         <button mat-raised-button color="primary" (click)="onSelected('model','currency');">By currency</button>
+        <div style="clear: both">
+          <button mat-raised-button (click)="onHistory('model');">History</button>
+          <button mat-raised-button color="accent" (click)="onPrediction('model');">Prediction</button>
+        </div>
       </div>
       <div id="chartPortfolioModel" style="width: 500px;"></div>
     </div>  
+  </div>
+  <div class="row">
+      <div id="valueChart" style="width: 100%;"></div>
   </div>
 </div>
 

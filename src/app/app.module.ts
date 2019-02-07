@@ -9,8 +9,9 @@ import { PortfolioComponent } from './portfolio/portfolio.component';
 import { CustomerPortfolioComponent } from './customer-portfolio/customer-portfolio.component';
 import { DictionaryComponent } from './dictionary/dictionary.component';
 
-import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {MatButtonModule, MatCheckboxModule} from '@angular/material';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MatButtonModule, MatCheckboxModule, MatMenuModule,
+  MatToolbarModule, MatIconModule, MatCardModule} from '@angular/material';
 
 @NgModule({
   declarations: [
@@ -27,8 +28,12 @@ import {MatButtonModule, MatCheckboxModule} from '@angular/material';
     BrowserAnimationsModule,
     MatButtonModule, 
     MatCheckboxModule,
+    MatMenuModule,
+    MatToolbarModule,
+    MatIconModule,
+    MatCardModule
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}

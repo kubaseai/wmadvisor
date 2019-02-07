@@ -3,12 +3,24 @@ import { CustomerPortfolioComponent } from '../app/customer-portfolio/customer-p
 import { CustomerRiskProfile } from '../app/dictionary/dictionary.component';
 import { ProductComponent } from '../app/product/product.component';
 import { PortfolioComponent } from './portfolio/portfolio.component';
+import { HttpClientModule, HttpClient, HttpHandler, HttpXhrBackend, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { Injector} from '@angular/core';
+import { Observable, pipe } from 'rxjs';
+import { map, filter, skip } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CustomerDataService {
 
+  private static injector = Injector.create({
+    providers: [
+        { provide: HttpClient, deps: [HttpHandler] },
+        { provide: HttpHandler, useValue: new HttpXhrBackend({ build: () => new XMLHttpRequest }) },
+    ],
+  });
+  private static http: HttpClient = CustomerDataService.injector.get(HttpClient);
+  
   public static getCustomerPortfolio(clientId: string) : CustomerPortfolioComponent {
     let aCustomerRiskProfile: CustomerRiskProfile = CustomerRiskProfile.BALANCED;
     let portfolio : CustomerPortfolioComponent = {
@@ -78,5 +90,18 @@ export class CustomerDataService {
     return portfolio;
   }
 
-  constructor() { }
+  public static getStockData(symbol: string, points: number) : Observable<any> {
+    let payload = this.http.get<any>('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='
+      +symbol+'&outputSize='+points+'&apikey=N4MJ59ALJQQV88T4').pipe(
+        map(root => root["Time Series (Daily)"]));
+    payload.pipe(
+      map(elem => {
+          date: elem.localname;
+          value: elem["1. open"]
+      })
+    ).subscribe(elem => {
+      console.log(elem);
+    });
+    return payload;
+  }
 }
