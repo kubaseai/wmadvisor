@@ -9,6 +9,8 @@ import { Renderer, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/platform-browser';
 import 'hammerjs';
 import { CdkAccordion } from '@angular/cdk/accordion';
+import { Observable, merge , of} from 'rxjs';
+import { toArray, mergeAll } from 'rxjs/operators';
 
 am4core.useTheme(am4themes_animated);
 
@@ -218,6 +220,62 @@ export class AppComponent {
   }
 
   onHistory(kind: string): void {
+    if (this.valueChart)
+      this.valueChart.dispose();
+
+    let stockSymbols = kind=='real' ? AppComponent.selectedRealProduct :
+      AppComponent.selectedModelProduct;
+    let httpGets : Observable<any>[] = [];
+    let it : Iterator<string> = stockSymbols.keys();
+    let stockSymbol : string;
+    while (true) {
+      let result = it.next();
+      if (result.done) {        
+        break;
+      }
+      stockSymbol = result.value;
+      httpGets.push(CustomerDataService.getStockData(stockSymbol, 365));
+    }
+    console.log("waiting for merge");
+    merge(...httpGets).pipe(mergeAll()).pipe(toArray()).subscribe((stockData: any[]) => {
+      console.log("combining stock data "+stockData.length);
+      let chart = am4core.create("valueChart", am4charts.XYChart);      
+      chart.data = CustomerDataService.mergeStockMultiData(stockData);
+      chart.svgContainer.htmlElement.style.height = "500px";
+
+      // Create axes
+      let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+      let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+      dateAxis.renderer.minGridDistance = 60;
+      valueAxis.extraMin = 1;
+
+      // Create series
+      let it : Iterator<string> = stockSymbols.keys();
+      let stockSymbol : string;
+      while (true) {
+        let result = it.next();
+        if (result.done) {        
+          break;
+        }
+        stockSymbol = result.value;
+        let series = chart.series.push(new am4charts.LineSeries());
+        series.dataFields.valueY = stockSymbol;
+        series.dataFields.dateX = "date";
+        series.tooltipText = (kind=='real' ? 'current':'recommended')+
+          " product "+stockSymbol + ": {"+stockSymbol+"}";
+        series.tooltip.pointerOrientation = "vertical";
+      }      
+
+      chart.cursor = new am4charts.XYCursor();
+      chart.scrollbarX = new am4core.Scrollbar();
+      chart.scrollbarY = new am4core.Scrollbar();
+      
+      this.valueChart = chart;
+      document.getElementById('valueChart').scrollIntoView();
+    });
+  }
+
+  _onHistory(kind: string): void {
     if (this.valueChart)
       this.valueChart.dispose();
 

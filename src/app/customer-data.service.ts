@@ -39,7 +39,7 @@ export class CustomerDataService {
           [ProductComponent.createShare("AMZN", "Amazon.com Inc", "USD", "Consumer Services"), 9.81],    
           [ProductComponent.createShare("JNJ", "Johnson & Johnson", "USD", "Health Care"), 5.84], 
           [ProductComponent.createShare("FB", "Facebook Inc.", "USD", "Technology"), 5.82],
-          [ProductComponent.createShare("BRK.A", "Berkshire Hathaway Inc.", "USD", "Conglomerate"), 5.63],
+          [ProductComponent.createShare("BRK", "Berkshire Hathaway Inc.", "USD", "Conglomerate"), 5.63],
           [ProductComponent.createShare("JPM", "J.P. Morgan Chase & Co", "USD", "Financial"), 5.41],
           [ProductComponent.createShare("GOOG", "Alphabet Inc.", "USD", "Technology"), 9.79],
           [ProductComponent.createShare("BAC", "Bank of America Corp.", "USD", "Financial"), 3.88],
@@ -75,7 +75,7 @@ export class CustomerDataService {
         [ProductComponent.createShare("AMZN", "Amazon.com Inc", "USD", "Consumer Services"), 9],    
         [ProductComponent.createShare("JNJ", "Johnson & Johnson", "USD", "Health Care"), 9], 
         [ProductComponent.createShare("FB", "Facebook Inc.", "USD", "Technology"), 9],
-        [ProductComponent.createShare("BRK.A", "Berkshire Hathaway Inc.", "USD", "Conglomerate"), 9],
+        [ProductComponent.createShare("BRK", "Berkshire Hathaway Inc.", "USD", "Conglomerate"), 9],
         [ProductComponent.createShare("JPM", "J.P. Morgan Chase & Co", "USD", "Financial"), 9],
         [ProductComponent.createShare("GOOG", "Alphabet Inc.", "USD", "Technology"), 9],
         [ProductComponent.createShare("BAC", "Bank of America Corp.", "USD", "Financial"), 9],
@@ -92,22 +92,44 @@ export class CustomerDataService {
     return portfolio;
   }
 
-  public static dailyStocksTransform(arr: any) : any {
+  public static mergeStockMultiData(data: any[]) : any[] {
+    let map : Map<string,any> = new Map();
+    for (let entry of data) {
+      let date = Object.getOwnPropertyDescriptor(entry, 'date').value;
+      let existing = map.get(date);
+      if (existing!=null) {
+        for (let p of Object.getOwnPropertyNames(existing)) {
+          let pDesc = Object.getOwnPropertyDescriptor(existing, p);
+          Object.defineProperty(entry, p, pDesc);
+        }
+      }
+      map.set(date, entry);      
+    }
+    return Array.from(map.values());
+  }
+
+  public static dailyStocksTransform(arr: any, symbol: string) : any {
+    if (arr==null || arr==undefined)
+      return [];
     let symbols : Array<string> = Object.getOwnPropertyNames(arr);
     let data = [];
     for (let name of symbols) {
       let val = Object.getOwnPropertyDescriptor(arr, name).value;
       let price = val["4. close"];
-      data.push({ date: name, value: price});
+      let obj = { date: name, value: price};
+      Object.defineProperty(obj, symbol, { value: price });
+      data.push(obj);
     }
     return data;
   }
 
   public static getStockData(symbol: string, points: number) : Observable<any> {
-    let payload = this.http.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='
+    console.log('Requested stock data for '+symbol);
+    let payload = CustomerDataService.http.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='
       +symbol+'&outputSize='+points+'&apikey='+CustomerDataService.API_KEY).pipe(
-        map(root => CustomerDataService.dailyStocksTransform(root["Time Series (Daily)"]))
+        map(root => CustomerDataService
+          .dailyStocksTransform(root["Time Series (Daily)"], symbol))
     );
     return payload;
-  }
+  }  
 }
