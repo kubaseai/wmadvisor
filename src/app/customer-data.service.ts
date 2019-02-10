@@ -125,10 +125,10 @@ export class CustomerDataService {
 
   public static getStockData(symbol: string, points: number) : Observable<any> {
     console.log('Requested stock data for '+symbol);
-    let payload = CustomerDataService.http.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol='
+    let payload = CustomerDataService.http.get('https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol='
       +symbol+'&outputSize='+points+'&apikey='+CustomerDataService.API_KEY).pipe(
         map(root => CustomerDataService
-          .dailyStocksTransform(root["Time Series (Daily)"], symbol))
+          .dailyStocksTransform(root["Monthly Time Series"], symbol))
     );
     return payload;
   }  
