@@ -240,14 +240,31 @@ export class AppComponent {
     merge(...httpGets).pipe(mergeAll()).pipe(toArray()).subscribe((stockData: any[]) => {
       console.log("combining stock data "+stockData.length);
       let chart = am4core.create("valueChart", am4charts.XYChart);      
-      chart.data = CustomerDataService.mergeStockMultiData(stockData);
+      let chartData = CustomerDataService.mergeStockMultiData(stockData);
+      chartData.sort( (o1, o2) => {
+        let o1date = Object.getOwnPropertyDescriptor(o1, "date").value as string;
+        let o2date = Object.getOwnPropertyDescriptor(o2, "date").value as string;
+        return o1date.localeCompare(o2date);
+      });
+      chart.data = chartData;
       chart.svgContainer.htmlElement.style.height = "500px";
 
       // Create axes
       let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
       let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-      dateAxis.renderer.minGridDistance = 60;
-      valueAxis.extraMin = 1;
+      dateAxis.renderer.minGridDistance = 30;
+      valueAxis.minX = 0;
+
+      chart.cursor = new am4charts.XYCursor();
+      chart.cursor.behavior = "zoomX";
+      chart.cursor.xAxis = dateAxis;
+      let scrollbarX = new am4charts.XYChartScrollbar();
+      chart.scrollbarX = scrollbarX;
+      chart.scrollbarX.parent = chart.bottomAxesContainer;
+
+      chart.scrollbarY = new am4core.Scrollbar();      
+      chart.scrollbarY.parent = chart.leftAxesContainer;
+      chart.scrollbarY.toBack();
 
       // Create series
       let it : Iterator<string> = stockSymbols.keys();
@@ -261,14 +278,12 @@ export class AppComponent {
         let series = chart.series.push(new am4charts.LineSeries());
         series.dataFields.valueY = stockSymbol;
         series.dataFields.dateX = "date";
-        series.tooltipText = (kind=='real' ? 'current':'recommended')+
-          " product "+stockSymbol + ": {"+stockSymbol+"}";
+        series.strokeWidth = 2;
+        series.tooltipText = stockSymbol + " {"+stockSymbol+"}";
         series.tooltip.pointerOrientation = "vertical";
+        chart.cursor.snapToSeries = series;
+        scrollbarX.series.push(series);
       }      
-
-      chart.cursor = new am4charts.XYCursor();
-      chart.scrollbarX = new am4core.Scrollbar();
-      chart.scrollbarY = new am4core.Scrollbar();
       
       this.valueChart = chart;
       document.getElementById('valueChart').scrollIntoView();
