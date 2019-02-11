@@ -126,6 +126,7 @@ export class AppComponent {
     ];  
 
     var series = chartPortfolioModel.series.push(new am4charts.PieSeries3D());
+    series.propertyFields.stroke = "color";
     series.dataFields.value = "share";
     series.dataFields.category = "product";
     series.ticks.template.disabled = true;
@@ -234,18 +235,14 @@ export class AppComponent {
         break;
       }
       stockSymbol = result.value;
-      httpGets.push(CustomerDataService.getStockData(stockSymbol, 365));
+      httpGets.push(CustomerDataService.getStockData(stockSymbol, 360));
     }
     console.log("waiting for merge");
     merge(...httpGets).pipe(mergeAll()).pipe(toArray()).subscribe((stockData: any[]) => {
       console.log("combining stock data "+stockData.length);
       let chart = am4core.create("valueChart", am4charts.XYChart);      
       let chartData = CustomerDataService.mergeStockMultiData(stockData);
-      chartData.sort( (o1, o2) => {
-        let o1date = Object.getOwnPropertyDescriptor(o1, "date").value as string;
-        let o2date = Object.getOwnPropertyDescriptor(o2, "date").value as string;
-        return o1date.localeCompare(o2date);
-      });
+      CustomerDataService.sortByDate(chartData);
       chart.data = chartData;
       chart.svgContainer.htmlElement.style.height = "500px";
 
@@ -289,55 +286,110 @@ export class AppComponent {
       document.getElementById('valueChart').scrollIntoView();
     });
   }
-
-  _onHistory(kind: string): void {
-    if (this.valueChart)
-      this.valueChart.dispose();
-
-    let stockSymbols = kind=='real' ? AppComponent.selectedRealProduct :
-      AppComponent.selectedModelProduct;
-    let it : Iterator<string> = stockSymbols.keys();
-    let stockSymbol : string;
-    while (true) {
-      let result = it.next();
-      if (result.done) {        
-        break;
-      }
-      stockSymbol = result.value;
+  
+  predictGrowth(data: any[]) {
+    CustomerDataService.sortByDate(data);
+    let stock : number[];
+    let symbol : string = '';
+    for (let i : number = 0; i < 5; i++) {
+      let obj = data[data.length-i*12];
+      let value = Object.getOwnPropertyDescriptor(obj, "value").value as number;
+      symbol = Object.getOwnPropertyDescriptor(obj, "symbol").value as string;
+      stock[i] = value;
     }
-
-    console.log("retrieve stock data "+stockSymbol);
-
-    CustomerDataService.getStockData(stockSymbol, 365).subscribe((stockData: any) => {
-      let chart = am4core.create("valueChart", am4charts.XYChart);      
-      chart.data = stockData;
-      chart.svgContainer.htmlElement.style.height = "500px";
-
-      // Create axes
-      let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
-      let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-      dateAxis.renderer.minGridDistance = 60;
-      valueAxis.extraMin = 1;
-
-      // Create series
-      let series = chart.series.push(new am4charts.LineSeries());
-      series.dataFields.valueY = "value";
-      series.dataFields.dateX = "date";
-      series.tooltipText = (kind=='real' ? 'current':'recommended')+
-       " product "+stockSymbol + ": {value}";
-      series.tooltip.pointerOrientation = "vertical";
-
-      chart.cursor = new am4charts.XYCursor();
-      chart.cursor.snapToSeries = series;
-      chart.scrollbarX = new am4core.Scrollbar();
-      chart.scrollbarY = new am4core.Scrollbar();
-      
-      this.valueChart = chart;
-      document.getElementById('valueChart').scrollIntoView();
-    });
+    let stock1Y = (stock[0] - stock[1])/stock[1];
+    let stock2Y = (stock[1] - stock[2])/stock[2];
+    let stock3Y = (stock[2] - stock[3])/stock[3];
+    let stock2Ys = (stock[0] - stock[3])/stock[3];
+    let stock5Ys = (stock[0] - stock[5])/stock[5];
+    let predictPerfMin1Y = Math.min(stock1Y, stock2Y, stock3Y);
+    let predictPerfMax1Y = Math.max(stock1Y, stock2Y, stock3Y);
+    let predictPerfMin2Y = Math.min(2*predictPerfMin1Y, stock2Ys);
+    let predictPerfMax2Y = Math.max(2*predictPerfMax1Y, stock2Ys);
+    let predictPerfMin5Y = Math.min(5*predictPerfMin1Y, stock5Ys);
+    let predictPerfMax5Y = Math.max(5*predictPerfMax1Y, stock5Ys);
+    let p1 = { year: 1};
+    Object.defineProperty(p1, "min"+symbol, { value: predictPerfMin1Y });
+    Object.defineProperty(p1, "max"+symbol, { value: predictPerfMax1Y });
+    Object.defineProperty(p1, "avg"+symbol, { value: (predictPerfMin1Y + predictPerfMax1Y)/2 });
+    let p2 = { year: 2};
+    Object.defineProperty(p2, "min"+symbol, { value: predictPerfMin2Y });
+    Object.defineProperty(p2, "max"+symbol, { value: predictPerfMax2Y });
+    Object.defineProperty(p2, "avg"+symbol, { value: (predictPerfMin2Y + predictPerfMax2Y)/2 });
+    let p5 = { year: 5}
+    Object.defineProperty(p5, "min"+symbol, { value: predictPerfMin5Y });
+    Object.defineProperty(p5, "max"+symbol, { value: predictPerfMax5Y });
+    Object.defineProperty(p5, "avg"+symbol, { value: (predictPerfMin5Y + predictPerfMax5Y)/2 });
+    return [ p1, p2, p5 ];
   }
 
-  onPrediction(kind: string): void {
-    console.log('onPrediction stub '+kind); 
-  }
+  onPrediction(kind: string) {
+      if (this.valueChart)
+        this.valueChart.dispose();
+  
+      let stockSymbols = kind=='real' ? AppComponent.selectedRealProduct :
+        AppComponent.selectedModelProduct;
+      let httpGets : Observable<any>[] = [];
+      let it : Iterator<string> = stockSymbols.keys();
+      let stockSymbol : string;
+      while (true) {
+        let result = it.next();
+        if (result.done) {        
+          break;
+        }
+        stockSymbol = result.value;
+        httpGets.push(CustomerDataService.getStockData(stockSymbol, 60));
+      }
+      let predictions = [];
+      let finishCounter : number = 0;
+      of(...httpGets).pipe().subscribe((o : Observable<any>) => {
+        o.pipe(toArray()).subscribe( (data: any[]) => {
+          predictions.push(this.predictGrowth(data));
+          if (++finishCounter == httpGets.length) {
+            let chart = am4core.create("valueChart", am4charts.XYChart);      
+            chart.data = predictions;
+            chart.svgContainer.htmlElement.style.height = "500px";
+
+            // Create axes
+            let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+            let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+            dateAxis.renderer.minGridDistance = 30;
+            valueAxis.minX = 0;
+
+            chart.cursor = new am4charts.XYCursor();
+            chart.cursor.behavior = "zoomX";
+            chart.cursor.xAxis = dateAxis;
+            let scrollbarX = new am4charts.XYChartScrollbar();
+            chart.scrollbarX = scrollbarX;
+            chart.scrollbarX.parent = chart.bottomAxesContainer;
+
+            chart.scrollbarY = new am4core.Scrollbar();      
+            chart.scrollbarY.parent = chart.leftAxesContainer;
+            chart.scrollbarY.toBack();
+
+            // Create series
+            let it : Iterator<string> = stockSymbols.keys();
+            let stockSymbol : string;
+            while (true) {
+              let result = it.next();
+              if (result.done) {        
+                break;
+              }
+              stockSymbol = result.value;
+              let series = chart.series.push(new am4charts.LineSeries());
+              series.dataFields.valueY = "avg"+stockSymbol;
+              series.dataFields.dateX = "year";
+              series.strokeWidth = 2;
+              series.tooltipText = stockSymbol;
+              series.tooltip.pointerOrientation = "vertical";
+              chart.cursor.snapToSeries = series;
+              scrollbarX.series.push(series);
+            }      
+            
+            this.valueChart = chart;
+            document.getElementById('valueChart').scrollIntoView();
+          }          
+        });
+      });
+  }  
 }

@@ -131,5 +131,13 @@ export class CustomerDataService {
           .dailyStocksTransform(root["Monthly Time Series"], symbol))
     );
     return payload;
-  }  
+  }
+  
+  public static sortByDate(data: any[]) {
+    data.sort( (o1, o2) => {
+      let o1date = Object.getOwnPropertyDescriptor(o1, "date").value as string;
+      let o2date = Object.getOwnPropertyDescriptor(o2, "date").value as string;
+      return o1date.localeCompare(o2date);
+    });
+  }
 }
