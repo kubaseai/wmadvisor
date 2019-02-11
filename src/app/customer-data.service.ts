@@ -108,7 +108,7 @@ export class CustomerDataService {
     return Array.from(map.values());
   }
 
-  public static dailyStocksTransform(arr: any, symbol: string) : any {
+  public static dailyStocksTransform(arr: any, symbol: string, priceInSymbol: boolean) : any {
     if (arr==null || arr==undefined)
       return [];
     let symbols : Array<string> = Object.getOwnPropertyNames(arr);
@@ -116,19 +116,24 @@ export class CustomerDataService {
     for (let name of symbols) {
       let val = Object.getOwnPropertyDescriptor(arr, name).value;
       let price = val["4. close"];
-      let obj = { date: name, value: price};
-      Object.defineProperty(obj, symbol, { value: price });
-      data.push(obj);
+      if (priceInSymbol) {
+        let obj = { date: name };
+        Object.defineProperty(obj, symbol, { value: price });
+        data.push(obj);
+      }
+      else {
+        data.push({ date: name, value: price, symbol: symbol });
+      }
     }
     return data;
   }
 
-  public static getStockData(symbol: string, points: number) : Observable<any> {
+  public static getStockData(symbol: string, points: number, priceInSymbol: boolean) : Observable<any> {
     console.log('Requested stock data for '+symbol);
     let payload = CustomerDataService.http.get('https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol='
       +symbol+'&outputSize='+points+'&apikey='+CustomerDataService.API_KEY).pipe(
         map(root => CustomerDataService
-          .dailyStocksTransform(root["Monthly Time Series"], symbol))
+          .dailyStocksTransform(root["Monthly Time Series"], symbol, priceInSymbol))
     );
     return payload;
   }
