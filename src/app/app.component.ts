@@ -322,19 +322,22 @@ export class AppComponent {
       max: null
     },
     {
-      label: symbol+" 1y",
+      label: symbol+" "+(new Date().getUTCFullYear()+1),
+      period: "1y",
       min: Math.round(predictPerfMin1Y * 100)/100,
       maxDiff: Math.round((predictPerfMin1Y >=0 ? predictPerfMax1Y - predictPerfMin1Y : predictPerfMax1Y)*100)/100,
       max: Math.round(predictPerfMax1Y*100)/100
     },
     {
-      label: symbol+" 2yrs",
+      label: symbol+" "+(new Date().getUTCFullYear()+2),
+      period: "2y",
       min: Math.round(predictPerfMin2Y * 100)/100,
       maxDiff: Math.round((predictPerfMin2Y >=0 ? predictPerfMax2Y - predictPerfMin2Y : predictPerfMax2Y)*100)/100,
       max: Math.round(predictPerfMax2Y*100)/100
     },
     {
-      label: symbol+" 5yrs",
+      label: symbol+" "+(new Date().getUTCFullYear()+5),
+      period: "5y",
       min: Math.round(predictPerfMin5Y * 100)/100,
       maxDiff: Math.round((predictPerfMin1Y >=0 ? predictPerfMax5Y - predictPerfMin5Y : predictPerfMax5Y)*100)/100,
       max: Math.round(predictPerfMax5Y*100)/100
@@ -396,13 +399,13 @@ export class AppComponent {
             // Create series
             for (let label of [              
               [ "min", "minimum", "min" ],
-              [ "maxDiff", "maximum", "max" ]])             
+              [ "maxDiff", "up to maximum", "max" ]])             
             {
               let series = chart.series.push(new am4charts.ColumnSeries());
               series.dataFields.valueY = label[0];
               series.dataFields.categoryX = "label";
               series.name = label[1];
-              series.columns.template.tooltipText = "{label}: "+label[1]+" {"+label[2]+"}%";
+              series.columns.template.tooltipText = "{period}: "+label[1]+" {"+label[2]+"}%";
               series.stacked = label[0].indexOf("Diff")>0;
               series.columns.template.width = am4core.percent(95);
               chart.cursor.snapToSeries = series;
