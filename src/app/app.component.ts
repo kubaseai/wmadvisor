@@ -11,6 +11,8 @@ import 'hammerjs';
 import { CdkAccordion } from '@angular/cdk/accordion';
 import { Observable, merge , of} from 'rxjs';
 import { toArray, mergeAll } from 'rxjs/operators';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 am4core.useTheme(am4themes_animated);
 
@@ -32,6 +34,7 @@ export class AppComponent {
   private static selectedModelProduct = new Set();
   
   constructor(private zone: NgZone, @Inject(DOCUMENT) private document: any, private renderer: Renderer) {
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;
     this.customerPortfolio = CustomerDataService.getCustomerPortfolio(this.customerId);
   }
 
@@ -288,11 +291,11 @@ export class AppComponent {
     });
   }
   
-  predictGrowth(data: any[]) {
+  predictGrowth(data: any[]) : any[] {
     CustomerDataService.sortByDate(data);
     let stock : number[] = [];
     let symbol : string = '';
-    for (let i : number = 0; i <= 5; i++) {
+    for (let i : number = 0; i <= 6; i++) {
       let idx : number = data.length - i*12;
       if (idx>=0 && idx <= data.length-1) {
         let obj = data[data.length-i*12];   
@@ -312,15 +315,30 @@ export class AppComponent {
     let predictPerfMax2Y = Math.max(2*predictPerfMax1Y, stock2Ys);
     let predictPerfMin5Y = Math.min(5*predictPerfMin1Y, stock5Ys);
     let predictPerfMax5Y = Math.max(5*predictPerfMax1Y, stock5Ys);
-    return { 
+    return [{ // header
       label: symbol,
-      min1y: predictPerfMin1Y,
-      max1yDiff: predictPerfMax1Y - predictPerfMin1Y,
-      min2y: predictPerfMin2Y,
-      max2yDiff: predictPerfMax2Y - predictPerfMin2Y,
-      min5y: predictPerfMin5Y,
-      max5yDiff: predictPerfMax5Y - predictPerfMin5Y,
-    }
+      min: null,
+      maxDiff: null,
+      max: null
+    },
+    {
+      label: symbol+" 1y",
+      min: Math.round(predictPerfMin1Y * 100)/100,
+      maxDiff: Math.round((predictPerfMin1Y >=0 ? predictPerfMax1Y - predictPerfMin1Y : predictPerfMax1Y)*100)/100,
+      max: Math.round(predictPerfMax1Y*100)/100
+    },
+    {
+      label: symbol+" 2yrs",
+      min: Math.round(predictPerfMin2Y * 100)/100,
+      maxDiff: Math.round((predictPerfMin2Y >=0 ? predictPerfMax2Y - predictPerfMin2Y : predictPerfMax2Y)*100)/100,
+      max: Math.round(predictPerfMax2Y*100)/100
+    },
+    {
+      label: symbol+" 5yrs",
+      min: Math.round(predictPerfMin5Y * 100)/100,
+      maxDiff: Math.round((predictPerfMin1Y >=0 ? predictPerfMax5Y - predictPerfMin5Y : predictPerfMax5Y)*100)/100,
+      max: Math.round(predictPerfMax5Y*100)/100
+    }]
   }
 
   onPrediction(kind: string) {
@@ -344,16 +362,17 @@ export class AppComponent {
       let finishCounter : number = 0;
       of(...httpGets).pipe().subscribe((o : Observable<any>) => {
         o.pipe().subscribe( (data: any[]) => {
-          predictions.push(this.predictGrowth(data));
+          for (let result of this.predictGrowth(data))
+           predictions.push(result);
           if (++finishCounter == httpGets.length) {
             let chart = am4core.create("valueChart", am4charts.XYChart);      
-            chart.data = predictions;
+            chart.data = predictions;  
             chart.svgContainer.htmlElement.style.height = "500px";
 
             // Create axes
             let categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
             categoryAxis.dataFields.category = "label";
-            categoryAxis.title.text = "Previous results projected into future, change in %";
+            categoryAxis.title.text = "Previous results projected into consecutive years, change in %";
             categoryAxis.renderer.grid.template.location = 0;
             categoryAxis.renderer.minGridDistance = 20;
             categoryAxis.renderer.cellStartLocation = 0.1;
@@ -372,26 +391,22 @@ export class AppComponent {
             chart.scrollbarY.toBack();
 
             // Add legend
-            chart.legend = new am4charts.Legend();
+            chart.legend = new am4charts.Legend();           
 
             // Create series
-            for (let label of [
-              ["min1y", "min 1yr"],
-              ["max1yDiff", "max 1yr"],
-              ["min2y", "min 2yrs"],
-              ["max2yDiff", "max 2yrs"],
-              ["min5y", "min 5yrs"],
-              ["max5yDiff", "max 5yrs"]])
+            for (let label of [              
+              [ "min", "minimum", "min" ],
+              [ "maxDiff", "maximum", "max" ]])             
             {
               let series = chart.series.push(new am4charts.ColumnSeries());
               series.dataFields.valueY = label[0];
               series.dataFields.categoryX = "label";
               series.name = label[1];
-              series.columns.template.tooltipText = "{label}: "+label[1]+" {"+label[0]+"}%";
+              series.columns.template.tooltipText = "{label}: "+label[1]+" {"+label[2]+"}%";
               series.stacked = label[0].indexOf("Diff")>0;
               series.columns.template.width = am4core.percent(95);
               chart.cursor.snapToSeries = series;
-              scrollbarX.series.push(series);
+              scrollbarX.series.push(series);              
             }      
             
             this.valueChart = chart;
@@ -399,5 +414,57 @@ export class AppComponent {
           }          
         });
       });
-  }  
+  }
+  
+  getModelPortfolioTable() : string[] {
+    let table = [];
+    table.push(['Product Name', 'Product Id', 'New Allocation']);
+    for (let entry of this.customerPortfolio.customerModelPortfolio.productsAllocation) {
+      let product : ProductComponent = entry[0];
+      let allocation : number = entry[1];
+      table.push([ product.name, product.id, allocation+"" ]);
+    }
+    return table;
+  }
+
+  onCommit() {
+    var dd = { 
+      content: [
+        {text: 'Committed model portfolio', style: 'header'},
+        'Execution request of porfolio adjustment under advisory session for client '+this.customerId,
+        {text: 'Requested portfolio allocation', style: 'subheader'},
+        'Following products will be bought',
+        {
+          style: 'tablePortfolio',
+          table: {
+            body: this.getModelPortfolioTable()            
+          }
+        }],
+        styles: {
+          header: {
+            fontSize: 18,
+            bold: true,
+            margin: [0, 0, 0, 10]
+          },
+          subheader: {
+            fontSize: 16,
+            bold: true,
+            margin: [0, 10, 0, 5]
+          },
+          tablePortfolio: {
+            margin: [0, 5, 0, 15]
+          },
+          tableHeader: {
+            bold: true,
+            fontSize: 13,
+            color: 'black'
+          }
+        },
+        defaultStyle: {
+          // alignment: 'justify'
+        }
+    };
+    console.log("pdf open");
+    pdfMake.createPdf(dd).download('commit-model-portfolio.pdf');
+  }
 }

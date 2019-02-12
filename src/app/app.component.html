@@ -27,7 +27,7 @@
         <button mat-raised-button color="primary" (click)="onSelected('real','currency');">By currency</button>
         <div style="clear: both">
           <button mat-raised-button (click)="onHistory('real');">History by product</button>
-          <button mat-raised-button color="accent" (click)="onPrediction('real');">Prediction</button>
+          <button mat-raised-button color="accent" (click)="onPrediction('real');">Analysis</button>
         </div>
       </div>
       <div id="chartPortfolioReal" style="width: 500px;"></div>
@@ -40,8 +40,8 @@
         <button mat-raised-button color="primary" (click)="onSelected('model','currency');">By currency</button>
         <div style="clear: both">
           <button mat-raised-button (click)="onHistory('model');">History by product</button>
-          <button mat-raised-button color="accent" (click)="onPrediction('model');">Prediction</button>
-          <button mat-raised-button color="warn" (click)="onPrediction('model');">Commit</button>
+          <button mat-raised-button color="accent" (click)="onPrediction('model');">Analysis</button>
+          <button mat-raised-button color="warn" (click)="onCommit();">Commit</button>
         </div>
       </div>
       <div id="chartPortfolioModel" style="width: 500px;"></div>
