@@ -95,41 +95,19 @@ export class AppComponent {
         let result = it.next();
         if (result.done)
           break;
-        data.push({ product: result.value, share: this.mapModel.get(result.value)});
+        data.push({ product: result.value, share: this.mapModel.get(result.value), c: am4core.color("black")});
       }      
     }
     else {
       for (let i : number = 0; i < this.customerPortfolio.customerModelPortfolio.productsAllocation.length; i++) {
         let product : ProductComponent = this.customerPortfolio.productsAllocation[i][0];
         let share : number = this.customerPortfolio.productsAllocation[i][1];
-        data.push({ product: product.name, share: share, symbol: product.id });
+        data.push({ product: product.name, share: share, symbol: product.id, c: am4core.color("black") });
       }
     }    
-    chartPortfolioModel.data = data;    
-
-    chartPortfolioModel.colors.list = [
-      am4core.color("black"),
-      am4core.color("black"),
-      am4core.color("black"),
-      am4core.color("#FF9671"),
-      am4core.color("black"),
-      am4core.color("#F9F871"),
-      am4core.color("black"),
-      am4core.color("black"),
-      am4core.color("black"),
-      am4core.color("#FF9671"),
-      am4core.color("black"),
-      am4core.color("#F9F871"),
-      am4core.color("black"),
-      am4core.color("black"),
-      am4core.color("black"),
-      am4core.color("#FF9671"),
-      am4core.color("black"),
-      am4core.color("#F9F871")
-    ];  
-
+    chartPortfolioModel.data = data;
     var series = chartPortfolioModel.series.push(new am4charts.PieSeries3D());
-    series.propertyFields.stroke = "color";
+    series.propertyFields.stroke = "c";
     series.dataFields.value = "share";
     series.dataFields.category = "product";
     series.ticks.template.disabled = true;
@@ -252,7 +230,8 @@ export class AppComponent {
       // Create axes
       let dateAxis = chart.xAxes.push(new am4charts.DateAxis());
       let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-      dateAxis.renderer.minGridDistance = 30;
+      dateAxis.renderer.minGridDistance = 40;
+      dateAxis.renderer.fontSize = 13;
       dateAxis.title.text = "Market price history";
       valueAxis.minX = 0;
 
@@ -375,9 +354,10 @@ export class AppComponent {
             // Create axes
             let categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
             categoryAxis.dataFields.category = "label";
+            categoryAxis.renderer.fontSize = 13;
             categoryAxis.title.text = "Previous results projected into consecutive years, change in %";
             categoryAxis.renderer.grid.template.location = 0;
-            categoryAxis.renderer.minGridDistance = 20;
+            categoryAxis.renderer.minGridDistance = 40;
             categoryAxis.renderer.cellStartLocation = 0.1;
             categoryAxis.renderer.cellEndLocation = 0.9;
             let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
