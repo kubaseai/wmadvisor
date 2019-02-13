@@ -291,6 +291,23 @@ export class AppComponent {
       document.getElementById('valueChart').scrollIntoView();
     });
   }
+
+  stats(tab: number[], from: number, to: number) : number[] {
+    let acc : number = 0;
+    let min : number = + Infinity;
+    let max : number = - Infinity;
+    let n : number = to-from+1;
+    for (let i : number = from; i <= to; i++) {
+      if (i < 0 || i >= tab.length)
+        break;
+      acc += tab[i];
+      if (tab[i] < min)
+        min = tab[i];
+      if (tab[i] > max)
+        max = tab[i];
+    }
+    return [ min, max, acc/n ];
+  }
   
   predictGrowth(data: any[]) : any[] {
     CustomerDataService.sortByDate(data);
@@ -310,6 +327,29 @@ export class AppComponent {
     let stock3Y = 100*(stock[2] - stock[3])/stock[3];
     let stock2Ys = 100*(stock[0] - stock[2])/stock[2];
     let stock5Ys = 100*(stock[0] - stock[5])/stock[5];
+
+    let stats1y = this.stats(data, data.length-12-1, data.length-1);
+    let stats2y = this.stats(data, data.length-24-1, data.length-12-1);
+    let stats2ys = this.stats(data, data.length-24-1, data.length-1);
+    let stats3y = this.stats(data, data.length-36-1, data.length-24-1);
+    let stats5ys = this.stats(data, data.length-60-1, data.length-1);
+
+    let stock1y = 100*(stats1y[1] - stats1y[2])/stats1y[1];
+    let stock2y = 100*(stats2y[1] - stats2y[2])/stats2y[1];
+    let stock2ys = 100*(stats2ys[1] - stats2ys[2])/stats2ys[1];
+    let stock3y = 100*(stats3y[1] - stats3y[2])/stats3y[1];
+    let stock5ys = 100*(stats5ys[1] - stats5ys[2])/stats5ys[1];
+
+    if (stock1Y > 2*stock1y)
+      stock1Y = stock1y;
+    if (stock2Y > 2*stock2y)
+      stock2Y = stock2y;
+    if (stock2Ys > 2*stock2ys)
+      stock2Ys = stock2ys;
+    if (stock3Y > 2*stock3y)
+      stock3Y = stock3y;
+    if (stock5Ys > 2*stock5ys)
+      stock5Ys = stock5ys;
     let predictPerfMin1Y = Math.min(stock1Y, stock2Y, stock3Y);
     let predictPerfMax1Y = Math.max(stock1Y, stock2Y, stock3Y);
     let predictPerfMin2Y = Math.min(2*predictPerfMin1Y, stock2Ys);
