@@ -13,6 +13,7 @@ import { Observable, merge , of} from 'rxjs';
 import { toArray, mergeAll } from 'rxjs/operators';
 import * as pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import { modelGroupProvider } from '@angular/forms/src/directives/ng_model_group';
 
 am4core.useTheme(am4themes_animated);
 
@@ -32,11 +33,20 @@ export class AppComponent {
   private mapModel = new Map<string, number>();
   private static selectedRealProduct = new Set();
   private static selectedModelProduct = new Set();
-  
+  private colorSet : am4core.ColorSet = new am4core.ColorSet();
+  private colorMap : Map<string, am4core.Color> = new Map();
+   
   constructor(private zone: NgZone, @Inject(DOCUMENT) private document: any, private renderer: Renderer) {
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;    
     this.customerPortfolio = CustomerDataService.getCustomerPortfolio(this.customerId);
   }
+
+  colorMod(str : string) : am4core.Color {
+    let color : am4core.Color = this.colorMap.get(str);
+    if (color==null)
+      this.colorMap.set(str, color = this.colorSet.next())
+    return color;
+  } 
 
   private makeChartPortfolioReal() {
     if (this.chartPortfolioReal)
@@ -64,6 +74,12 @@ export class AppComponent {
     }    
     chartPortfolioReal.data = data;
     var series = chartPortfolioReal.series.push(new am4charts.PieSeries3D());
+    series.slices.template.adapter.add("fill", (value, target, key) => {
+      let cat = target.dataItem.properties["category"];
+      if (cat==null || cat==undefined)
+        cat= "";
+      return this.colorMod(cat);
+    });
     series.dataFields.value = "share";
     series.dataFields.category = "product";
     series.ticks.template.disabled = true;
@@ -107,6 +123,12 @@ export class AppComponent {
     }    
     chartPortfolioModel.data = data;
     var series = chartPortfolioModel.series.push(new am4charts.PieSeries3D());
+    series.slices.template.adapter.add("fill", (value, target, key) => {
+      let cat = target.dataItem.properties["category"];
+      if (cat==null || cat==undefined)
+        cat= "";
+      return this.colorMod(cat);
+    });
     series.propertyFields.stroke = "c";
     series.dataFields.value = "share";
     series.dataFields.category = "product";
