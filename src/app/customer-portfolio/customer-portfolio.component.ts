@@ -12,7 +12,7 @@ export class CustomerPortfolioComponent implements OnInit {
 
   customerId: string;
   productsAllocation: Array<[ProductComponent,number]>;
-  customerRiskProfile: CustomerRiskProfile;
+  customerRiskProfile: CustomerRiskProfile = CustomerRiskProfile.BALANCED;
   customerModelPortfolio: PortfolioComponent;
 
   constructor() { }

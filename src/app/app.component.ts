@@ -36,9 +36,20 @@ export class AppComponent {
   private colorSet : am4core.ColorSet = new am4core.ColorSet();
   private colorMap : Map<string, am4core.Color> = new Map();
    
+  title = 'Investment Advisory Calculator';
+  customerId = "123456";  
+  customerPortfolio? : CustomerPortfolioComponent;
+
   constructor(private zone: NgZone, @Inject(DOCUMENT) private document: any, private renderer: Renderer) {
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;    
-    this.customerPortfolio = CustomerDataService.getCustomerPortfolio(this.customerId);
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;   
+  }
+
+  onStartSession() {
+    return new Promise(resolve => {
+      this.customerPortfolio = CustomerDataService.getCustomerPortfolio(this.customerId);
+      this.makeChartPortfolioReal();
+      this.makeChartPortfolioModel();
+    });
   }
 
   colorMod(str : string) : am4core.Color {
@@ -165,8 +176,6 @@ export class AppComponent {
       this.addGoogleFont('Archivo');    
       this.addGoogleFont('Lato');  
       this.addGoogleFont('Material Icons');    
-      this.makeChartPortfolioReal();
-      this.makeChartPortfolioModel();
     //});
   }
 
@@ -178,9 +187,6 @@ export class AppComponent {
         this.chartPortfolioModel.dispose();
       }   
   }
-  title = 'Investment Advisory Calculator';
-  customerId = "1";  
-  customerPortfolio? : CustomerPortfolioComponent;
 
   makeGroupingKey(product: ProductComponent, by: string) : string {
     if (by=='industry')
@@ -473,6 +479,8 @@ export class AppComponent {
   }
 
   onCommit() {
+    if (this.customerPortfolio==null)
+	return;
     var dd = { 
       content: [
         {text: 'Committed model portfolio', style: 'header'},
