@@ -58,6 +58,15 @@ export class AppComponent {
       this.colorMap.set(str, color = this.colorSet.next())
     return color;
   } 
+  
+  private addColorModAdapter(series: am4charts.PieSeries3D) {
+    series.slices.template.adapter.add("fill", (value, target, key) => {
+      let cat = target.dataItem.properties["category"];
+      if (cat==null || cat==undefined)
+        cat= "";
+      return this.colorMod(cat);
+    });
+  }
 
   private makeChartPortfolioReal() {
     if (this.chartPortfolioReal)
@@ -85,12 +94,7 @@ export class AppComponent {
     }    
     chartPortfolioReal.data = data;
     var series = chartPortfolioReal.series.push(new am4charts.PieSeries3D());
-    series.slices.template.adapter.add("fill", (value, target, key) => {
-      let cat = target.dataItem.properties["category"];
-      if (cat==null || cat==undefined)
-        cat= "";
-      return this.colorMod(cat);
-    });
+    this.addColorModAdapter(series);
     series.dataFields.value = "share";
     series.dataFields.category = "product";
     series.ticks.template.disabled = true;
@@ -134,12 +138,7 @@ export class AppComponent {
     }    
     chartPortfolioModel.data = data;
     var series = chartPortfolioModel.series.push(new am4charts.PieSeries3D());
-    series.slices.template.adapter.add("fill", (value, target, key) => {
-      let cat = target.dataItem.properties["category"];
-      if (cat==null || cat==undefined)
-        cat= "";
-      return this.colorMod(cat);
-    });
+    this.addColorModAdapter(series);
     series.propertyFields.stroke = "c";
     series.dataFields.value = "share";
     series.dataFields.category = "product";
